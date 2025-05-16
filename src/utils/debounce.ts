@@ -5,14 +5,12 @@ export function useDebounce<T extends (...args: any[]) => void>(
     delay: number
 ): (...args: Parameters<T>) => void {
     const callbackRef = useRef(callback);
-    const timeoutRef = useRef<NodeJS.Timeout>();
+    const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-    // Обновляем ref callback при изменении
     useEffect(() => {
         callbackRef.current = callback;
     }, [callback]);
 
-    // Очищаем таймаут при размонтировании
     useEffect(() => {
         return () => {
             if (timeoutRef.current) {

@@ -1,66 +1,67 @@
-import { PersonTable } from './components/PersonTable/PersonTable';
-import { PersonForm } from './components/PersonForm/PersonForm';
-import { ErrorBanner } from './components/ErrorBanner/ErrorBanner';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { usePeopleData } from './hooks/usePeopleData';
-import { ThemeToggle } from './components/ThemeToggle/ThemeToggle';
+import React, { useContext } from "react";
+import usePeopleData from "./hooks/usePeopleData";
+import { ThemeProvider, ThemeContext } from "./contexts/ThemeContext";
 
-export function App() {
+const PeopleList: React.FC = () => {
     const {
         people,
-        person,
-        editingId,
-        error,
-        isLoading,
-        pagination,
-        handleSearch,
-        handleSort,
-        handleChange,
-        handleSubmit,
-        handleDelete,
-        setEditingId,
-        fetchPeople,
+        loading,
         searchTerm,
-        sortConfig
+        sortConfig,
+        setSearchTerm,
+        setSortConfig,
+        fetchPeople,
     } = usePeopleData();
+
+    const handleSort = () => {
+        setSortConfig({
+            key: "name",
+            direction: sortConfig.direction === "asc" ? "desc" : "asc",
+        });
+    };
+
+    return (
+        <div>
+            <h1>People</h1>
+            <input
+                type="text"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Search..."
+            />
+            <button onClick={handleSort}>Sort</button>
+            {loading ? (
+                <p>Loading...</p>
+            ) : (
+                <ul>
+                    {people
+                        .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                        .sort((a, b) =>
+                            sortConfig.direction === "asc"
+                                ? a.name.localeCompare(b.name)
+                                : b.name.localeCompare(a.name)
+                        )
+                        .map(person => (
+                            <li key={person.id}>
+                                {person.name} — {person.email}
+                            </li>
+                        ))}
+                </ul>
+            )}
+        </div>
+    );
+};
+
+const App: React.FC = () => {
+    const theme = useContext(ThemeContext);
 
     return (
         <ThemeProvider>
-            <div className="container">
-                <header className="header">
-                    <h1>Список пользователей</h1>
-                    <ThemeToggle />
-                </header>
-
-                <ErrorBanner error={error} />
-
-                <main className="main-content">
-                    <section className="card user-grid-container">
-                        <PersonTable
-                            people={people}
-                            isLoading={isLoading}
-                            pagination={pagination}
-                            onSearch={handleSearch}
-                            onSort={handleSort}
-                            onDelete={handleDelete}
-                            onEdit={(p) => setEditingId(p.id || null)}
-                            searchTerm={searchTerm}
-                            fetchPeople={fetchPeople}
-                            sortConfig={sortConfig}
-                        />
-                    </section>
-
-                    <section className="card user-form">
-                        <PersonForm
-                            person={person}
-                            editingId={editingId}
-                            onChange={handleChange}
-                            onSubmit={handleSubmit}
-                            onCancel={() => setEditingId(null)}
-                        />
-                    </section>
-                </main>
+            <div className={`app ${theme?.theme || "light"}`}>
+                <PeopleList />
             </div>
         </ThemeProvider>
     );
-}
+};
+
+export default App;
