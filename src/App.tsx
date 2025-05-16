@@ -6,6 +6,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { ThemeToggle } from "./components/ThemeToggle/ThemeToggle";
 import "./styles/global.css";
 import { Person, SortableField } from "@/types/person";
+import {ErrorBanner} from "@/components";
 
 const App: React.FC = () => {
     const {
@@ -110,9 +111,7 @@ const App: React.FC = () => {
                 </header>
 
                 {error && (
-                    <div className="error-banner" onClick={() => setError(null)}>
-                        {error}
-                    </div>
+                    <ErrorBanner error={error} onDismiss={() => setError(null)} />
                 )}
 
                 <main className="main-content">
