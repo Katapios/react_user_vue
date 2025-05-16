@@ -1,10 +1,12 @@
-import { Pagination } from '../Pagination/Pagination';
 import { PersonTableHeader } from './PersonTableHeader';
 import { PersonTableRow } from './PersonTableRow';
 import { SearchInput } from '../SearchInput/SearchInput';
 import { Loader } from '../Loader/Loader';
 import { NoData } from '../NoData/NoData';
-import { Person } from '../../types/person';
+import { Pagination } from '../Pagination/Pagination';
+import { Person, SortableField, SortConfig } from '../../types/person';
+import { PaginationState } from "@/types/person";
+
 
 type PersonTableProps = {
     people: Person[];
@@ -14,29 +16,28 @@ type PersonTableProps = {
         size: number;
         total: number;
     };
+    setPagination: React.Dispatch<React.SetStateAction<PaginationState>>;
     onSearch: (term: string) => void;
-    onSort: (field: keyof Person) => void;
+    onSort: (field: SortableField) => void;
+    sortConfig: SortConfig;
     onDelete: (id: number) => void;
     onEdit: (person: Person) => void;
     searchTerm: string;
     fetchPeople: (search?: string) => Promise<void>;
-    sortConfig: {
-        field: keyof Person;
-        direction: 'asc' | 'desc';
-    };
 };
 
 export const PersonTable = ({
                                 people,
                                 isLoading,
                                 pagination,
+                                setPagination,
                                 onSearch,
                                 onSort,
                                 onDelete,
                                 onEdit,
                                 searchTerm,
                                 fetchPeople,
-                                sortConfig
+                                sortConfig,
                             }: PersonTableProps) => {
     return (
         <>
@@ -58,7 +59,7 @@ export const PersonTable = ({
                         <table className="user-table">
                             <PersonTableHeader onSort={onSort} sortConfig={sortConfig} />
                             <tbody>
-                            {people.map(person => (
+                            {people.map((person) => (
                                 <PersonTableRow
                                     key={person.id}
                                     person={person}
@@ -73,8 +74,12 @@ export const PersonTable = ({
                         currentPage={pagination.page}
                         itemsPerPage={pagination.size}
                         totalItems={pagination.total}
-                        onChangePage={(page) => console.log('Page changed to:', page)}
-                        onChangeSize={(size) => console.log('Size changed to:', size)}
+                        onChangePage={(page) =>
+                            setPagination(prev => ({ ...prev, page }))
+                        }
+                        onChangeSize={(size) =>
+                            setPagination(prev => ({ ...prev, size })) // сброс на первую страницу
+                        }
                     />
                 </>
             )}

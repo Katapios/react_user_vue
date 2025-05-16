@@ -1,4 +1,4 @@
-import {useDebounce} from "@/utils/debounce";
+import { useDebounce } from "../../utils/debounce";
 import {useState} from "react";
 
 type SearchInputProps = {

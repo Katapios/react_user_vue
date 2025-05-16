@@ -1,15 +1,12 @@
-import { Person } from '../../types/person';
+import { SortableField, SortConfig } from "@/types/person";
 
-type PersonTableHeaderProps = {
-    onSort: (field: keyof Person) => void;
-    sortConfig: {
-        field: keyof Person;
-        direction: 'asc' | 'desc';
-    };
-};
+interface PersonTableHeaderProps {
+    onSort: (field: SortableField) => void;
+    sortConfig: SortConfig;
+}
 
 export const PersonTableHeader = ({ onSort, sortConfig }: PersonTableHeaderProps) => {
-    const getSortIndicator = (field: keyof Person) => {
+    const getSortIndicator = (field: SortableField) => {
         if (sortConfig.field !== field) return null;
         return sortConfig.direction === 'asc' ? '↑' : '↓';
     };

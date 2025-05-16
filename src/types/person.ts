@@ -5,8 +5,10 @@ export interface Person {
     email: string;
 }
 
+export type SortableField = 'id' | 'name' | 'age' | 'email';
+
 export interface SortConfig {
-    field: keyof Person;
+    field: SortableField;
     direction: 'asc' | 'desc';
 }
 

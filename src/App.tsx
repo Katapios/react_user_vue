@@ -1,64 +1,148 @@
-import React, { useContext } from "react";
+import React, { useState, useEffect } from "react";
 import usePeopleData from "./hooks/usePeopleData";
-import { ThemeProvider, ThemeContext } from "./contexts/ThemeContext";
+import { PersonTable } from "./components/PersonTable/PersonTable";
+import UserForm from "./components/UserForm/UserForm";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { ThemeToggle } from "./components/ThemeToggle/ThemeToggle";
+import "./styles/global.css";
+import { Person, SortableField } from "@/types/person";
 
-const PeopleList: React.FC = () => {
+const App: React.FC = () => {
     const {
         people,
         loading,
         searchTerm,
         sortConfig,
+        pagination,
         setSearchTerm,
         setSortConfig,
+        setPagination,
         fetchPeople,
     } = usePeopleData();
 
-    const handleSort = () => {
-        setSortConfig({
-            key: "name",
-            direction: sortConfig.direction === "asc" ? "desc" : "asc",
+    const [person, setPerson] = useState<Omit<Person, "id">>({
+        name: "",
+        age: 0,
+        email: "",
+    });
+
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        fetchPeople(searchTerm);
+    }, [pagination.page, pagination.size, sortConfig]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setPerson((prev) => ({
+            ...prev,
+            [name]: name === "age" ? parseInt(value) || 0 : value,
+        }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const url = editingId
+                ? `/api/persons/${editingId}`
+                : "/api/persons";
+            const method = editingId ? "PUT" : "POST";
+
+            const res = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(person),
+            });
+
+            if (!res.ok) throw new Error("Ошибка сохранения");
+
+            setPerson({ name: "", age: 0, email: "" });
+            setEditingId(null);
+            fetchPeople(searchTerm);
+        } catch (err) {
+            setError("Ошибка при сохранении");
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        if (!window.confirm("Удалить пользователя?")) return;
+
+        try {
+            const res = await fetch(`/api/persons/${id}`, { method: "DELETE" });
+            if (!res.ok) throw new Error("Ошибка удаления");
+
+            fetchPeople(searchTerm);
+        } catch (err) {
+            setError("Ошибка удаления пользователя");
+        }
+    };
+
+    const handleSort = (field: SortableField) => {
+        const direction: "asc" | "desc" =
+            sortConfig.field === field && sortConfig.direction === "asc"
+                ? "desc"
+                : "asc";
+        setSortConfig({ field, direction });
+    };
+
+    const handleEdit = (personToEdit: Person) => {
+        setPerson({
+            name: personToEdit.name,
+            age: personToEdit.age,
+            email: personToEdit.email,
         });
+        setEditingId(personToEdit.id ?? null);
+    };
+
+    const handleSearch = (term: string) => {
+        setSearchTerm(term);
+        setPagination((prev) => ({ ...prev, page: 1 }));
+        fetchPeople(term);
     };
 
     return (
-        <div>
-            <h1>People</h1>
-            <input
-                type="text"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                placeholder="Search..."
-            />
-            <button onClick={handleSort}>Sort</button>
-            {loading ? (
-                <p>Loading...</p>
-            ) : (
-                <ul>
-                    {people
-                        .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                        .sort((a, b) =>
-                            sortConfig.direction === "asc"
-                                ? a.name.localeCompare(b.name)
-                                : b.name.localeCompare(a.name)
-                        )
-                        .map(person => (
-                            <li key={person.id}>
-                                {person.name} — {person.email}
-                            </li>
-                        ))}
-                </ul>
-            )}
-        </div>
-    );
-};
-
-const App: React.FC = () => {
-    const theme = useContext(ThemeContext);
-
-    return (
         <ThemeProvider>
-            <div className={`app ${theme?.theme || "light"}`}>
-                <PeopleList />
+            <div className="container">
+                <header className="header">
+                    <h1>Список пользователей</h1>
+                    <ThemeToggle />
+                </header>
+
+                {error && (
+                    <div className="error-banner" onClick={() => setError(null)}>
+                        {error}
+                    </div>
+                )}
+
+                <main className="main-content">
+                    <section className="card user-grid-container">
+                        <PersonTable
+                            people={people}
+                            isLoading={loading}
+                            pagination={pagination}
+                            setPagination={setPagination}
+                            onSearch={handleSearch}
+                            onSort={handleSort}
+                            onDelete={handleDelete}
+                            onEdit={handleEdit}
+                            searchTerm={searchTerm}
+                            fetchPeople={fetchPeople}
+                            sortConfig={sortConfig}
+                        />
+                    </section>
+
+                    <UserForm
+                        person={person}
+                        editingId={editingId}
+                        onChange={handleChange}
+                        onSubmit={handleSubmit}
+                        onCancel={() => {
+                            setPerson({ name: "", age: 0, email: "" });
+                            setEditingId(null);
+                        }}
+                    />
+                </main>
             </div>
         </ThemeProvider>
     );
